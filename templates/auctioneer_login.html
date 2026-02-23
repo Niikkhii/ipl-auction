@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Auctioneer Login{% endblock %}
+{% block nav_links %}{% endblock %}
+{% block content %}
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-icon">🎤</div>
+    <h2>Auctioneer Login</h2>
+    <p>Enter the auctioneer password to access the control panel</p>
+    {% if error %}
+    <div class="login-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST">
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Enter auctioneer password" autofocus required>
+      </div>
+      <button type="submit" class="btn btn-sell" style="width:100%;margin-top:1rem;">🔑 Login</button>
+    </form>
+    <a href="/" class="back-link">← Back to home</a>
+  </div>
+</div>
+{% endblock %}

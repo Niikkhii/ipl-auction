@@ -1,0 +1,11 @@
+flask==3.0.3
+mysql-connector-python==8.4.0
+gunicorn==22.0.0
+
+
+
+    INSERT INTO auction_players 
+(name, role, category, nationality, base_price)
+VALUES
+
+

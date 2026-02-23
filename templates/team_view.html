@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}{{ team_name }} — Live Auction View{% endblock %}
+
+{% block content %}
+<div class="team-view-layout">
+
+  <!-- Team Header Banner -->
+  <div class="team-banner" id="team-banner">
+    <div class="tb-left">
+      <div class="tb-code">{{ team.short_code }}</div>
+      <div class="tb-name">{{ team_name }}</div>
+    </div>
+    <div class="tb-stats">
+      <div class="tb-stat">
+        <span class="tb-val" id="tv-purse">₹{{ "%.2f"|format(team.purse) }} Cr</span>
+        <span class="tb-lbl">Remaining Purse</span>
+      </div>
+      <div class="tb-stat">
+        <span class="tb-val" id="tv-spent">₹{{ "%.2f"|format(100 - team.purse) }} Cr</span>
+        <span class="tb-lbl">Total Spent</span>
+      </div>
+      <div class="tb-stat">
+        <span class="tb-val" id="tv-players">{{ team.total_players }}/18</span>
+        <span class="tb-lbl">Players {{ '⚠️' if team.total_players < 18 else '✅' }}</span>
+      </div>
+      <div class="tb-stat">
+        <span class="tb-val" id="tv-overseas">{{ team.overseas_count }}/8</span>
+        <span class="tb-lbl">Overseas</span>
+      </div>
+      <div class="tb-stat">
+        <span class="tb-val" id="tv-wk">{{ team.wk_count }}/2</span>
+        <span class="tb-lbl">WK {{ '⚠️' if team.wk_count < 2 else '✅' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tv-main">
+
+    <!-- Live Auction Card -->
+    <div class="tv-auction-card">
+      <div class="tv-section-title">🔴 LIVE — Current Player Being Auctioned</div>
+      <div id="tv-player-card" class="tv-player {% if not current_player %}empty{% endif %}">
+        {% if current_player %}
+        <div class="player-badge badge-{{ current_player.category | lower }}">{{ current_player.category }}</div>
+        <div class="player-number">#{{ current_player.id }}</div>
+        <h2 class="tv-player-name">{{ current_player.name }}</h2>
+        <div class="player-meta"><span class="meta-tag">{{ current_player.role }}</span></div>
+        <div class="tv-base-price">Base: ₹{{ "%.2f"|format(current_player.base_price) }} Cr</div>
+        {% else %}
+        <div class="auction-complete">
+          <div class="complete-icon">🏆</div>
+          <p>All players have been processed!</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="live-indicator">
+        <span class="live-dot"></span> Live updates active — no refresh needed
+      </div>
+    </div>
+
+    <!-- Team Squad with prices + purse summary -->
+    <div class="tv-squad-card">
+      <div class="tv-section-title">🏏 {{ team_name }} — Squad & Spending</div>
+
+      <!-- Purse summary bar -->
+      <div class="tv-purse-summary">
+        <div class="tv-purse-row">
+          <span class="tv-ps-label">Budget</span>
+          <span class="tv-ps-val">₹100.00 Cr</span>
+        </div>
+        <div class="tv-purse-row">
+          <span class="tv-ps-label">Spent</span>
+          <span class="tv-ps-val spent" id="tv-spent-detail">₹{{ "%.2f"|format(100 - team.purse) }} Cr</span>
+        </div>
+        <div class="tv-purse-bar-wrap">
+          <div class="tv-purse-bar-fill" id="tv-purse-bar" style="width:{{ ((100 - team.purse) / 100 * 100)|round }}%"></div>
+        </div>
+        <div class="tv-purse-row">
+          <span class="tv-ps-label">Remaining</span>
+          <span class="tv-ps-val remaining" id="tv-remaining-detail">₹{{ "%.2f"|format(team.purse) }} Cr</span>
+        </div>
+      </div>
+
+      <!-- Squad list -->
+      <div id="tv-squad-list">
+        {% if team.players %}
+          {% set total_spent = namespace(val=0) %}
+          {% for p in team.players %}
+            {% set total_spent.val = total_spent.val + p.current_bid %}
+          <div class="tv-squad-item">
+            <span class="tv-p-num">{{ loop.index }}</span>
+            <span class="tv-p-name">{{ p.name }}</span>
+            <span class="tv-p-badge badge-{{ p.category | lower }}">{{ p.category }}</span>
+            <span class="tv-p-role">{{ p.role }}</span>
+            <span class="tv-p-price">₹{{ "%.2f"|format(p.current_bid) }} Cr</span>
+          </div>
+          {% endfor %}
+          <div class="tv-squad-total">
+            <span>Total Spent</span>
+            <span>₹{{ "%.2f"|format(100 - team.purse) }} Cr</span>
+          </div>
+        {% else %}
+          <p class="no-history">No players bought yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Other Teams Summary Strip -->
+  <div class="tv-teams-strip">
+    {% for t in teams %}
+    <div class="tv-team-pill {% if t.name == team_name %}tv-my-team{% endif %}" id="tvteam-{{ t.id }}">
+      <span class="tvt-code">{{ t.short_code }}</span>
+      <span class="tvt-purse" id="tvt-purse-{{ t.id }}">₹{{ "%.2f"|format(t.purse) }}Cr</span>
+      <span class="tvt-overseas" id="tvt-os-{{ t.id }}">🌍{{ t.overseas_count }}/8</span>
+      <span class="tvt-players" id="tvt-pl-{{ t.id }}">👥{{ t.total_players }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<div id="tv-toast" style="
+  position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999;
+  background:#1e293b; border:1px solid #334155; color:#f1f5f9;
+  padding:0.75rem 1.25rem; border-radius:10px; font-size:0.9rem;
+  font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.5);
+  opacity:0; transition: opacity .4s; pointer-events:none;
+"></div>
+
+<script>
+const TEAM_NAME = {{ team_name | tojson }};
+
+const es = new EventSource('/api/events');
+let toastTimer;
+
+function showToast(msg) {
+  const t = document.getElementById('tv-toast');
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 3500);
+}
+
+function handleAuctionEvent(e) {
+  const data = JSON.parse(e.data);
+  const type = e.type;
+  if (data.next_player !== undefined) updateCurrentPlayer(data.next_player);
+  if (data.teams) updateTeamsStrip(data.teams);
+  if (['sale','undo','reset','cancel_rebid','player_assigned','budget_deducted'].includes(type)) {
+    refreshMySquad();
+  }
+  const msgs = {
+    sale: '🔨 Player sold!', unsold: '🚫 Player marked unsold',
+    undo: '↩ Last sale undone', reset: '🔄 Auction reset — budgets restored to ₹100 Cr',
+    cancel_rebid: '↩ Sale cancelled — player back in auction',
+    budget_deducted: `💸 Budget deducted from ${data.team_name || 'a team'}`,
+    player_assigned: `✅ ${data.player_name || 'Player'} assigned to ${data.team_name || 'a team'}`,
+    restore: '🔁 Player restored to auction queue',
+  };
+  showToast(msgs[type] || '🔄 Auction updated');
+}
+
+['sale','unsold','undo','reset','cancel_rebid','budget_deducted','player_assigned','restore'].forEach(ev => {
+  es.addEventListener(ev, handleAuctionEvent);
+});
+es.addEventListener('ping', () => {});
+es.onerror = () => { setTimeout(() => location.reload(), 5000); };
+
+function updateCurrentPlayer(player) {
+  const card = document.getElementById('tv-player-card');
+  if (!player) {
+    card.className = 'tv-player empty';
+    card.innerHTML = `<div class="auction-complete"><div class="complete-icon">🏆</div><p>All players processed!</p></div>`;
+    return;
+  }
+  const cat = (player.category || 'indian').toLowerCase();
+  card.className = 'tv-player';
+  card.innerHTML = `
+    <div class="player-badge badge-${cat}">${player.category}</div>
+    <div class="player-number">#${player.id}</div>
+    <h2 class="tv-player-name">${player.name}</h2>
+    <div class="player-meta"><span class="meta-tag">${player.role}</span></div>
+    <div class="tv-base-price">Base: ₹${parseFloat(player.base_price).toFixed(2)} Cr</div>`;
+}
+
+function updateTeamsStrip(teams) {
+  teams.forEach(t => {
+    const purseEl = document.getElementById(`tvt-purse-${t.id}`);
+    const osEl    = document.getElementById(`tvt-os-${t.id}`);
+    const plEl    = document.getElementById(`tvt-pl-${t.id}`);
+    if (purseEl) purseEl.textContent = `₹${parseFloat(t.purse).toFixed(2)}Cr`;
+    if (osEl)    osEl.textContent    = `🌍${t.overseas_count}/8`;
+    if (plEl)    plEl.textContent    = `👥${t.total_players}`;
+
+    if (t.name === TEAM_NAME) {
+      const purse = parseFloat(t.purse);
+      const spent = 100 - purse;
+      const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+      set('tv-purse',    `₹${purse.toFixed(2)} Cr`);
+      set('tv-spent',    `₹${spent.toFixed(2)} Cr`);
+      set('tv-players',  `${t.total_players}/18`);
+      set('tv-overseas', `${t.overseas_count}/8`);
+      set('tv-wk',       `${t.wk_count}/2`);
+      set('tv-spent-detail',     `₹${spent.toFixed(2)} Cr`);
+      set('tv-remaining-detail', `₹${purse.toFixed(2)} Cr`);
+      const bar = document.getElementById('tv-purse-bar');
+      if (bar) bar.style.width = `${Math.min((spent / 100) * 100, 100)}%`;
+    }
+  });
+}
+
+function refreshMySquad() {
+  fetch(`/api/teams/${encodeURIComponent(TEAM_NAME)}`)
+    .then(r => r.json()).then(d => {
+      if (d.status !== 'ok') return;
+      const team    = d.team;
+      const players = team.players || [];
+      const el      = document.getElementById('tv-squad-list');
+      if (!el) return;
+
+      if (players.length === 0) {
+        el.innerHTML = '<p class="no-history">No players bought yet.</p>';
+        return;
+      }
+
+      let totalSpent = 0;
+      players.forEach(p => { totalSpent += parseFloat(p.current_bid || 0); });
+
+      el.innerHTML = players.map((p, i) => `
+        <div class="tv-squad-item">
+          <span class="tv-p-num">${i + 1}</span>
+          <span class="tv-p-name">${p.name}</span>
+          <span class="tv-p-badge badge-${(p.category||'indian').toLowerCase()}">${p.category}</span>
+          <span class="tv-p-role">${p.role}</span>
+          <span class="tv-p-price">₹${parseFloat(p.current_bid||0).toFixed(2)} Cr</span>
+        </div>`).join('') +
+        `<div class="tv-squad-total">
+          <span>Total Spent (${players.length} players)</span>
+          <span>₹${totalSpent.toFixed(2)} Cr</span>
+        </div>`;
+    });
+}
+</script>
+{% endblock %}

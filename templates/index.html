@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% block title %}Auctioneer Control Panel{% endblock %}
+
+{% block nav_links %}
+<div class="nav-links">
+    <a href="/auction" class="nav-link active" id="nav-auction">🎤 Auctioneer</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="auction-layout">
+
+  <section class="player-section">
+    <div class="player-tabs">
+      <button class="tab-btn active" id="tab-current" onclick="switchTab('current')">🎯 Current Player</button>
+      <button class="tab-btn" id="tab-unsold" onclick="switchTab('unsold')">
+        📋 Unsold <span class="tab-badge" id="unsold-count">0</span>
+      </button>
+      <button class="tab-btn" id="tab-marked" onclick="switchTab('marked')">
+        🚫 Marked Unsold <span class="tab-badge tab-badge-red" id="marked-count">0</span>
+      </button>
+      <button class="tab-btn" id="tab-sold-list" onclick="switchTab('sold-list')">✅ Sold</button>
+    </div>
+
+    <div id="current-player-view" class="tab-content active">
+      <div id="player-card" class="player-card {% if not current_player %}empty{% endif %}">
+        {% if current_player %}
+        <div class="player-badge badge-{{ current_player.category | lower }}">{{ current_player.category }}</div>
+        <div class="player-number">#{{ current_player.id }}</div>
+        <h1 class="player-name" id="player-name">{{ current_player.name }}</h1>
+        <div class="player-meta"><span class="meta-tag">{{ current_player.role }}</span></div>
+        <div class="player-price">
+          <span class="price-label">Base Price</span>
+          <span class="price-value" id="player-base-price">₹{{ "%.2f"|format(current_player.base_price) }} Cr</span>
+        </div>
+        {% else %}
+        <div class="auction-complete">
+          <div class="complete-icon">🏆</div>
+          <h2>Auction Complete!</h2>
+          <p>All players have been processed.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="bid-controls" id="bid-controls" {% if not current_player %}style="display:none"{% endif %}>
+        <input type="hidden" id="player-id" value="{{ current_player.id if current_player else '' }}"/>
+        <div class="bid-input-group">
+          <label>Sold Price (Cr)</label>
+          <div class="bid-input-wrapper">
+            <button class="increment-btn" data-delta="-0.25">−</button>
+            <input type="number" id="bid-amount" step="0.25" min="0.25"
+                   value="{{ current_player.base_price if current_player else '' }}" placeholder="Enter amount"/>
+            <button class="increment-btn" data-delta="0.25">+</button>
+          </div>
+          <div class="quick-bids">
+            <button class="quick-bid-btn" data-delta="0.25">+0.25</button>
+            <button class="quick-bid-btn" data-delta="0.50">+0.50</button>
+            <button class="quick-bid-btn" data-delta="1.00">+1 Cr</button>
+            <button class="quick-bid-btn" data-delta="2.00">+2 Cr</button>
+          </div>
+        </div>
+        <div class="team-select-group">
+          <label>Buying Team</label>
+          <select id="team-select">
+            <option value="">-- Select Team --</option>
+            {% for team in teams %}
+            <option value="{{ team.name }}" data-purse="{{ team.purse }}" data-overseas="{{ team.overseas_count }}">
+              {{ team.name }} (₹{{ "%.2f"|format(team.purse) }} Cr)
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="validation-msg" id="validation-msg"></div>
+        <div class="action-buttons">
+          <button class="btn btn-sell" id="sell-btn" disabled>🔨 Sell Player</button>
+          <button class="btn btn-unsold" id="unsold-btn">🚫 Unsold</button>
+          <button class="btn btn-undo" id="undo-btn">↩ Undo Last</button>
+          <button class="btn btn-reset" id="reset-btn">🔄 Reset</button>
+        </div>
+      </div>
+
+      {% if not current_player %}
+      <div class="action-buttons" style="margin-top:1.5rem">
+        <button class="btn btn-reset" id="reset-btn-empty">🔄 Reset Auction</button>
+      </div>
+      {% endif %}
+    </div>
+
+    <div id="unsold-players-view" class="tab-content">
+      <div class="unsold-header">
+        <h3>Players Awaiting Auction</h3>
+        <button class="btn btn-refresh-small" onclick="loadUnsoldPlayers()">🔄 Refresh</button>
+      </div>
+      <div id="unsold-players-list" class="unsold-players-list">
+        <div class="loading-unsold"><span class="spinner"></span><span>Loading...</span></div>
+      </div>
+    </div>
+
+    <div id="marked-players-view" class="tab-content">
+      <div class="unsold-header">
+        <h3>Marked Unsold Players</h3>
+        <button class="btn btn-refresh-small" onclick="loadMarkedUnsold()">🔄 Refresh</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin:0.5rem 0 1rem;">
+        Click "Re-queue" to put them back, or "Assign" to directly assign to a team.
+      </p>
+      <div id="marked-unsold-list" class="unsold-players-list"></div>
+    </div>
+
+    <div id="sold-list-view" class="tab-content">
+      <div class="unsold-header">
+        <h3>Sold Players</h3>
+        <button class="btn btn-refresh-small" onclick="loadSoldPlayers()">🔄 Refresh</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin:0.5rem 0 1rem;">
+        Click "Cancel &amp; Rebid" to void a sale and put the player back in the queue.
+      </p>
+      <div id="sold-players-list" class="unsold-players-list"></div>
+    </div>
+  </section>
+
+  <aside class="teams-panel">
+    <h2 class="panel-title">
+      Team Purses
+      <span style="font-size:0.6rem;color:var(--text-muted);font-weight:400;letter-spacing:0.04em;margin-left:0.4rem;">— click for squad</span>
+    </h2>
+    <div class="teams-grid" id="teams-grid">
+      {% for team in teams %}
+      <div class="team-card team-card-clickable" id="team-{{ team.name | replace(' ', '-') }}"
+           onclick="openTeamPopup('{{ team.name }}')" title="Click to view squad">
+        <div class="team-header">
+          <span class="team-code">{{ team.short_code }}</span>
+          <span class="team-name-small">{{ team.name }}</span>
+        </div>
+        <div class="team-purse">₹{{ "%.2f"|format(team.purse) }} Cr</div>
+        <div class="team-stats">
+          <span title="Players">👥 {{ team.total_players }}/18</span>
+          <span title="Overseas">🌍 {{ team.overseas_count }}/8</span>
+          <span title="Wicket-Keepers" class="{{ 'wk-warn' if team.wk_count < 2 else '' }}">🧤 {{ team.wk_count }}/2</span>
+        </div>
+        <div class="purse-bar-wrap">
+          <div class="purse-bar" style="width:{{ ((team.purse / 100) * 100)|round }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="auctioneer-tools">
+      <h2 class="panel-title" style="margin-top:1.5rem;">⚙️ Auctioneer Tools</h2>
+      <div class="tool-card">
+        <h4>📝 Assign Unsold Player to Team</h4>
+        <p class="tool-desc">Pick a player from the unsold list and assign directly to a team.</p>
+        <button class="btn btn-tool" onclick="openAssignModal()">Open Tool</button>
+      </div>
+      <div class="tool-card">
+        <h4>💸 Deduct Team Budget</h4>
+        <p class="tool-desc">Manually deduct funds from a team's purse.</p>
+        <button class="btn btn-tool" onclick="openDeductModal()">Open Tool</button>
+      </div>
+      <div class="tool-card">
+        <h4>➕ Add Player to Queue</h4>
+        <p class="tool-desc">Add a new player to the auction queue.</p>
+        <button class="btn btn-tool" onclick="openAddPlayerModal()">Open Tool</button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="history-section">
+    <h2 class="panel-title">Recent Sales</h2>
+    <div class="history-list" id="history-list">
+      {% if history %}
+        {% for h in history %}
+        <div class="history-item">
+          <span class="h-player">{{ h.player_name }}</span>
+          <span class="h-badge badge-{{ h.category | lower }}">{{ h.category }}</span>
+          <span class="h-role">{{ h.role }}</span>
+          <span class="h-team">→ {{ h.team_name }}</span>
+          <span class="h-price">₹{{ "%.2f"|format(h.bid_amount) }} Cr</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="no-history">No sales yet. Let the auction begin!</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<!-- ═══ TEAM DETAIL POPUP ═══════════════════════════════════════════════════ -->
+<div id="team-popup" class="modal" onclick="if(event.target===this)closeTeamPopup()">
+  <div class="modal-content team-popup-content">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:0.75rem;min-width:0;">
+        <span class="team-popup-code" id="popup-team-code">—</span>
+        <span class="team-popup-name" id="popup-team-name">Loading…</span>
+      </div>
+      <button class="modal-close" onclick="closeTeamPopup()">&times;</button>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="team-popup-stats" id="popup-stats">
+      <div class="tps-box tps-purse">
+        <div class="tps-val" id="popup-purse">—</div>
+        <div class="tps-lbl">Purse Left</div>
+      </div>
+      <div class="tps-box">
+        <div class="tps-val" id="popup-players">—</div>
+        <div class="tps-lbl">Players</div>
+      </div>
+      <div class="tps-box">
+        <div class="tps-val" id="popup-overseas">—</div>
+        <div class="tps-lbl">Foreigners</div>
+      </div>
+      <div class="tps-box" id="popup-wk-box">
+        <div class="tps-val" id="popup-wk">—</div>
+        <div class="tps-lbl">Keepers</div>
+      </div>
+      <div class="tps-box">
+        <div class="tps-val" id="popup-spent">—</div>
+        <div class="tps-lbl">Spent</div>
+      </div>
+    </div>
+
+    <!-- Purse bar -->
+    <div style="padding:0 1.3rem 0.75rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-muted);margin-bottom:0.3rem;font-family:var(--font-ui,sans-serif);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">
+        <span>Budget used</span>
+        <span id="popup-purse-pct">0%</span>
+      </div>
+      <div class="purse-bar-wrap" style="height:6px;">
+        <div class="purse-bar" id="popup-purse-bar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Squad table -->
+    <div id="popup-squad-body" style="padding:0 1.3rem 0.5rem;max-height:52vh;overflow-y:auto;">
+      <div class="loading-unsold"><span class="spinner"></span><span>Loading squad…</span></div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeTeamPopup()" style="flex:1;">✕ Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Unsold Player Modal -->
+<div id="assign-modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📝 Assign Player to Team</h2>
+      <button class="modal-close" onclick="closeAssignModal(); return false;">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>Select Player (from unsold list) *</label>
+      <select id="assign-player-select"><option value="">-- Loading unsold players... --</option></select>
+    </div>
+    <div class="form-group">
+      <label>Role *</label>
+      <select id="assign-role">
+        <option value="">-- Select Role --</option>
+        <option value="Batsman">Batsman</option>
+        <option value="Bowler">Bowler</option>
+        <option value="All-Rounder">All-Rounder</option>
+        <option value="Wicket-Keeper">Wicket-Keeper</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Category *</label>
+      <select id="assign-category">
+        <option value="">-- Select Category --</option>
+        <option value="Indian">Indian</option>
+        <option value="Overseas">Overseas</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Assign to Team *</label>
+      <select id="assign-team">
+        <option value="">-- Select Team --</option>
+        {% for team in teams %}
+        <option value="{{ team.name }}">{{ team.name }} (₹{{ "%.2f"|format(team.purse) }} Cr left)</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Bid Amount (Cr) *</label>
+      <input type="number" id="assign-amount" step="0.25" min="0.25" placeholder="e.g., 5.00">
+    </div>
+    <div id="assign-msg" class="form-message" style="display:none;"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeAssignModal(); return false;">Cancel</button>
+      <button class="btn btn-sell" onclick="doAssignPlayer()">✅ Assign Player</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deduct Budget Modal -->
+<div id="deduct-modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>💸 Deduct Team Budget</h2>
+      <button class="modal-close" onclick="closeDeductModal(); return false;">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>Team *</label>
+      <select id="deduct-team">
+        <option value="">-- Select Team --</option>
+        {% for team in teams %}
+        <option value="{{ team.name }}" data-purse="{{ team.purse }}">
+          {{ team.name }} (₹{{ "%.2f"|format(team.purse) }} Cr)
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Amount to Deduct (Cr) *</label>
+      <input type="number" id="deduct-amount" step="0.25" min="0.25" placeholder="e.g., 2.50">
+    </div>
+    <div id="deduct-msg" class="form-message" style="display:none;"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeDeductModal(); return false;">Cancel</button>
+      <button class="btn btn-unsold" onclick="doDeductBudget()">💸 Deduct Budget</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Player to Queue Modal -->
+<div id="add-player-modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>➕ Add New Player to Queue</h2>
+      <button class="modal-close" onclick="closeAddPlayerModal(); return false;">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>Player Name *</label>
+      <input type="text" id="new-player-name" placeholder="e.g., Virat Kohli" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Role *</label>
+      <select id="new-player-role">
+        <option value="">-- Select Role --</option>
+        <option value="Batsman">Batsman</option>
+        <option value="Bowler">Bowler</option>
+        <option value="All-Rounder">All-Rounder</option>
+        <option value="Wicket-Keeper">Wicket-Keeper</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Category *</label>
+      <select id="new-player-category">
+        <option value="">-- Select Category --</option>
+        <option value="Indian">Indian</option>
+        <option value="Overseas">Overseas</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Base Price (Cr) *</label>
+      <input type="number" id="new-player-price" step="0.25" min="0.25" placeholder="e.g., 2.00">
+    </div>
+    <div id="add-player-msg" class="form-message" style="display:none;"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeAddPlayerModal(); return false;">Cancel</button>
+      <button class="btn btn-sell" onclick="doAddPlayer()">➕ Add to Queue</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auction.js') }}"></script>
+{% endblock %}

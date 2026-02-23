@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}IPL Auction 2025 — Welcome{% endblock %}
+{% block nav_links %}{% endblock %}
+{% block content %}
+<div class="landing-container">
+  <div class="landing-hero">
+    <div class="landing-icon">🏏</div>
+    <h1>IPL Auction 2025</h1>
+    <p class="landing-subtitle">Multi-team real-time auction system</p>
+  </div>
+  <div class="landing-cards">
+    <div class="landing-card auctioneer-card" onclick="window.location='/auctioneer/login'">
+      <div class="lc-icon">🎤</div>
+      <h2>Auctioneer</h2>
+      <p>Control the auction — sell players, manage bids, override teams</p>
+      <button class="btn btn-sell">Enter as Auctioneer</button>
+    </div>
+    <div class="landing-card team-card">
+      <div class="lc-icon">🏟️</div>
+      <h2>Team Representative</h2>
+      <p>View live auction, see your team's squad and remaining budget</p>
+      <select id="team-select-landing" onchange="goTeam(this)">
+        <option value="">— Select Your Team —</option>
+        {% for team in teams %}
+        <option value="{{ team.name }}">{{ team.short_code }} — {{ team.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-team" onclick="goTeamBtn()">Join as Team</button>
+    </div>
+    <div class="landing-card dashboard-card" onclick="window.location='/dashboard'">
+      <div class="lc-icon">📊</div>
+      <h2>Public Dashboard</h2>
+      <p>View all team squads, budgets, and auction stats in real-time</p>
+      <button class="btn btn-secondary">View Dashboard</button>
+    </div>
+  </div>
+</div>
+<script>
+function goTeam(sel) {
+  // just enable button
+}
+function goTeamBtn() {
+  const sel = document.getElementById('team-select-landing');
+  if (!sel.value) { alert('Please select a team first'); return; }
+  // Go to team login with pre-selected team
+  const form = document.createElement('form');
+  form.method = 'POST'; form.action = '/team/login';
+  const inp = document.createElement('input');
+  inp.type = 'hidden'; inp.name = 'team_name'; inp.value = sel.value;
+  form.appendChild(inp); document.body.appendChild(form); form.submit();
+}
+</script>
+{% endblock %}

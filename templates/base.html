@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IPL Auction{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div id="flash" class="flash" style="display: none;"></div>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="nav-icon">🏏</span>
+            <span>IPL Auction <strong>2025</strong></span>
+        </div>
+        {% block nav_links %}
+        <div class="nav-links">
+            <a href="/dashboard" class="nav-link" id="nav-dashboard">📊 Dashboard</a>
+            <a href="/team" class="nav-link" id="nav-team">🏟️ Team View</a>
+        </div>
+        {% endblock %}
+    </nav>
+    {% block content %}{% endblock %}
+    {% block scripts %}{% endblock %}
+    <script>
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/auction')) document.getElementById('nav-auction')?.classList.add('active');
+        else if (currentPath.startsWith('/dashboard') || currentPath.startsWith('/teams')) document.getElementById('nav-dashboard')?.classList.add('active');
+        else if (currentPath.startsWith('/team')) document.getElementById('nav-team')?.classList.add('active');
+    </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Team Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <div>
+      <h1 class="dashboard-title">🏏 Team Dashboard</h1>
+      <p class="dashboard-subtitle">
+        Live squad & purse status • <span id="last-updated">Loading...</span>
+        <span class="auto-refresh-indicator">🔄 Live Updates</span>
+      </p>
+    </div>
+    <div class="dashboard-actions">
+      <a href="/" class="btn btn-secondary">← Home</a>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="summary-stats">
+    <div class="summary-card">
+      <div class="summary-icon">👥</div>
+      <div class="summary-content">
+        <div class="summary-value" id="total-players">0</div>
+        <div class="summary-label">Total Players Sold</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">💰</div>
+      <div class="summary-content">
+        <div class="summary-value" id="total-spent">₹0.00 Cr</div>
+        <div class="summary-label">Total Amount Spent</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">🌍</div>
+      <div class="summary-content">
+        <div class="summary-value" id="total-overseas">0</div>
+        <div class="summary-label">Overseas Players</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">🧤</div>
+      <div class="summary-content">
+        <div class="summary-value" id="total-wk">0</div>
+        <div class="summary-label">Wicket-Keepers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teams Grid -->
+  <div id="dashboard-grid" class="dashboard-grid">
+    {% for team in teams %}
+    <div class="dash-team-card" id="dash-{{ team.id }}" data-name="{{ team.name }}">
+      <div class="dash-card-header">
+        <div class="dash-team-info">
+          <div class="dash-short">{{ team.short_code }}</div>
+          <div class="dash-name">{{ team.name }}</div>
+        </div>
+        <div class="dash-purse purse-{{ 'low' if team.purse < 20 else 'mid' if team.purse < 50 else 'high' }}">
+          <span class="purse-label">Purse</span>
+          <span class="purse-value">₹{{ "%.2f" | format(team.purse) }} Cr</span>
+        </div>
+      </div>
+      <div class="purse-progress-bar">
+        <div class="purse-progress-fill" style="width: {{ (team.purse / 100) * 100 }}%"></div>
+      </div>
+      <div class="dash-stats-row">
+        <div class="stat-box">
+          <div class="stat-icon">👥</div>
+          <div class="stat-content">
+            <div class="stat-val">{{ team.total_players }}</div>
+            <div class="stat-lbl">Players</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon">🌍</div>
+          <div class="stat-content">
+            <div class="stat-val">{{ team.overseas_count }}/8</div>
+            <div class="stat-lbl">Overseas</div>
+          </div>
+        </div>
+        <div class="stat-box {{ 'wk-warn-box' if team.wk_count < 1 else '' }}">
+          <div class="stat-icon">🧤</div>
+          <div class="stat-content">
+            <div class="stat-val">{{ team.wk_count }}</div>
+            <div class="stat-lbl">WK {{ '⚠️' if team.wk_count < 1 else '✅' }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-squad-section">
+        <div class="squad-header">
+          <span class="squad-title">Squad ({{ team.total_players }})</span>
+          <span class="squad-toggle" onclick="toggleSquad({{ team.id }})">▼</span>
+        </div>
+        <div class="dash-players" id="players-{{ team.id }}" style="display:none;"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

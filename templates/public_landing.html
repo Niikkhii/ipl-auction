@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}IPL Auction 2025 — Welcome{% endblock %}
+{% block nav_links %}
+<a href="/dashboard" class="nav-link">📊 Dashboard</a>
+<a href="/team/login" class="nav-link">🏟️ Team View</a>
+{% if is_auctioneer %}
+<a href="/auction" class="nav-link">🎤 Auctioneer</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="landing-container">
+  <div class="landing-hero">
+    <div class="landing-icon">🏏</div>
+    <h1>IPL Auction 2025</h1>
+    <p class="landing-subtitle">Real-time multi-team auction system</p>
+  </div>
+
+  <div class="landing-cards">
+    <div class="landing-card" onclick="window.location='/auctioneer/login'">
+      <div class="lc-icon">🎤</div>
+      <h2>Auctioneer</h2>
+      <p>Control the auction — sell players, manage bids, override teams</p>
+      <button class="btn btn-sell" style="width:100%">Enter as Auctioneer</button>
+    </div>
+
+    <div class="landing-card">
+      <div class="lc-icon">🏟️</div>
+      <h2>Team Representative</h2>
+      <p>View live auction, track your squad and remaining budget</p>
+      <select id="team-select-landing">
+        <option value="">— Select Your Team —</option>
+        {% for team in teams %}
+        <option value="{{ team.name }}">{{ team.short_code }} — {{ team.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-team" onclick="goTeamBtn()" style="width:100%;margin-top:0.75rem">🏟️ Join as Team</button>
+    </div>
+
+    <div class="landing-card" onclick="window.location='/dashboard'">
+      <div class="lc-icon">📊</div>
+      <h2>Public Dashboard</h2>
+      <p>View all team squads, budgets and live auction stats</p>
+      <button class="btn btn-secondary" style="width:100%;margin-top:1rem">View Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function goTeamBtn() {
+  const sel = document.getElementById('team-select-landing');
+  if (!sel.value) { alert('Please select a team first'); return; }
+  const form = document.createElement('form');
+  form.method = 'POST'; form.action = '/team/login';
+  const inp = document.createElement('input');
+  inp.type = 'hidden'; inp.name = 'team_name'; inp.value = sel.value;
+  form.appendChild(inp); document.body.appendChild(form); form.submit();
+}
+</script>
+{% endblock %}
