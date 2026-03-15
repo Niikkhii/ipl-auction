@@ -5,7 +5,7 @@ class Config:
     MYSQL_HOST     = os.getenv('MYSQL_HOST',     'localhost')
     MYSQL_PORT     = int(os.getenv('MYSQL_PORT', 3306))
     MYSQL_USER     = os.getenv('MYSQL_USER',     'root')
-    MYSQL_PASSWORD = os.getenv['MYSQL_PASSWORD']   # ← your local password
+    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD','')   # ← your local password
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'ipl_auction')
     POOL_SIZE      = int(os.getenv('DB_POOL_SIZE', 5))
     POOL_TIMEOUT   = 30
