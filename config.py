@@ -14,5 +14,5 @@ class Config:
     DEBUG               = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
     AUCTIONEER_PASSWORD = os.getenv('AUCTIONEER_PASSWORD', 'auction2025')
 
-    # True on Railway (HTTPS), False locally (HTTP)
-    COOKIE_SECURE = os.getenv('RAILWAY_ENVIRONMENT') is not None
+    # Cookies
+    COOKIE_SECURE = False
