@@ -134,19 +134,45 @@ def auction_page():
 @app.route('/team/login', methods=['GET', 'POST'])
 def team_login():
     teams = auction.get_all_teams()
+
     if request.method == 'POST':
         team_name = request.form.get('team_name', '').strip()
         valid = [t['name'] for t in teams]
+
         if team_name not in valid:
-            return render_template('team_login.html', teams=teams, error='Invalid team selected')
+            return render_template(
+                'team_login.html',
+                teams=decimal_to_float(teams),
+                error='Invalid team selected'
+            )
+
         token = auction.create_team_session(team_name)
+
         if not token:
-            return render_template('team_login.html', teams=teams, error='Failed to create session')
+            return render_template(
+                'team_login.html',
+                teams=decimal_to_float(teams),
+                error='Failed to create session'
+            )
+
         resp = redirect(url_for('team_view'))
-        resp.set_cookie('team_token', token, httponly=True, samesite='Lax',
-                        secure=Config.COOKIE_SECURE)
+
+        resp.set_cookie(
+            'team_token',
+            token,
+            httponly=True,
+            samesite='Lax',
+            secure=Config.COOKIE_SECURE,
+            max_age=86400
+        )
+
         return resp
-    return render_template('team_login.html', teams=decimal_to_float(teams), error=None)
+
+    return render_template(
+        'team_login.html',
+        teams=decimal_to_float(teams),
+        error=None
+    )
 
 @app.route('/team/logout')
 def team_logout():
