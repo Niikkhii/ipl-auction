@@ -158,12 +158,13 @@ def team_login():
         resp = redirect(url_for('team_view'))
 
         resp.set_cookie(
-            'team_token',
-            token,
+            key='team_token',
+            value=token,
             httponly=True,
             samesite='Lax',
-            secure=Config.COOKIE_SECURE,
-            max_age=86400
+            secure=False,
+            max_age=86400,
+            path='/'
         )
 
         return resp
