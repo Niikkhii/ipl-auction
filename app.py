@@ -155,15 +155,15 @@ def team_login():
                 error='Failed to create session'
             )
 
-        resp = redirect(url_for('team_view'))
+        resp = redirect('/team', code=302)
 
         resp.set_cookie(
-            key='team_token',
-            value=token,
+            'team_token',
+            token,
+            max_age=86400,
             httponly=True,
             samesite='Lax',
             secure=False,
-            max_age=86400,
             path='/'
         )
 
@@ -174,7 +174,6 @@ def team_login():
         teams=decimal_to_float(teams),
         error=None
     )
-
 @app.route('/team/logout')
 def team_logout():
     resp = redirect(url_for('index'))
