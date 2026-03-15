@@ -295,6 +295,8 @@ def validate_auctioneer_token(token: str) -> bool:
 
 def get_connected_teams() -> list[dict]:
     return query_all(
-        "SELECT team_name, last_seen FROM team_sessions "
-        "WHERE last_seen > DATE_SUB(NOW(), INTERVAL 30 MINUTE) ORDER BY team_name"
+        "SELECT t.name AS team_name, ts.created_at "
+        "FROM team_sessions ts "
+        "JOIN teams t ON ts.team_id = t.id "
+        "ORDER BY t.name"
     )
