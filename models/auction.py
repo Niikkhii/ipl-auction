@@ -72,7 +72,7 @@ def sell_player(player_id: int, team_name: str, bid_amount: float) -> dict:
 
 
 def mark_player_unsold(player_id: int) -> dict:
-    """Mark a player as unsold (skip them for now)."""
+    """ Mark a player as unsold (skip them for now)."""
     return call_procedure('mark_player_unsold', (player_id,))
 
 
@@ -230,18 +230,26 @@ def get_all_players(include_sold: bool = True) -> list[dict]:
 
 
 # ── Sessions ──────────────────────────────────────────────────────────────────
-
 def create_team_session(team_name: str) -> str | None:
     import secrets
+
+    team = query_one("SELECT id FROM teams WHERE name=%s", (team_name,))
+    if not team:
+        return None
+
+    team_id = team['id']
     token = secrets.token_hex(32)
+
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("DELETE FROM team_sessions WHERE team_name = %s", (team_name,))
+
+        cur.execute("DELETE FROM team_sessions WHERE team_id = %s", (team_id,))
         cur.execute(
-            "INSERT INTO team_sessions (team_name, token) VALUES (%s, %s)",
-            (team_name, token)
+            "INSERT INTO team_sessions (team_id, session_token) VALUES (%s,%s)",
+            (team_id, token)
         )
+
         conn.commit()
         return token
     except Exception:
@@ -252,17 +260,13 @@ def create_team_session(team_name: str) -> str | None:
 
 
 def get_team_by_token(token: str) -> str | None:
-    row = query_one("SELECT team_name FROM team_sessions WHERE token = %s", (token,))
-    if row:
-        conn = get_connection()
-        try:
-            cur = conn.cursor()
-            cur.execute("UPDATE team_sessions SET last_seen = NOW() WHERE token = %s", (token,))
-            conn.commit()
-        finally:
-            conn.close()
-        return row['team_name']
-    return None
+    row = query_one(
+        "SELECT t.name FROM team_sessions ts "
+        "JOIN teams t ON ts.team_id = t.id "
+        "WHERE ts.session_token = %s",
+        (token,)
+    )
+    return row['name'] if row else None
 
 
 def get_auctioneer_token() -> str:
