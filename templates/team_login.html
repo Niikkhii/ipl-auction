@@ -1,28 +1,51 @@
 {% extends "base.html" %}
+
 {% block title %}Team Login{% endblock %}
+
 {% block nav_links %}{% endblock %}
+
 {% block content %}
+
 <div class="login-container">
   <div class="login-card">
-    <div class="login-icon">🏟️</div>
-    <h2>Team Login</h2>
-    <p>Select your team to join the live auction pool</p>
-    {% if error %}
-    <div class="login-error">{{ error }}</div>
-    {% endif %}
-    <form method="POST">
-      <div class="form-group">
-        <label>Select Team</label>
-        <select name="team_name" required>
-          <option value="">— Select Your Team —</option>
-          {% for team in teams %}
-          <option value="{{ team.name }}">{{ team.short_code }} — {{ team.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="btn btn-team" style="width:100%;margin-top:1rem;">🏟️ Join Auction</button>
-    </form>
-    <a href="/" class="back-link">← Back to home</a>
+
+```
+<div class="login-icon">🏟️</div>
+<h2>Team Login</h2>
+<p>Select your team to join the live auction pool</p>
+
+{% if error %}
+<div class="login-error">{{ error }}</div>
+{% endif %}
+
+<form method="POST" action="/team/login">
+
+  <div class="form-group">
+    <label for="team_name">Select Team</label>
+
+    <select name="team_name" id="team_name" required>
+      <option value="">— Select Your Team —</option>
+
+      {% for team in teams %}
+      <option value="{{ team.name }}">
+        {{ team.short_code }} — {{ team.name }}
+      </option>
+      {% endfor %}
+
+    </select>
+  </div>
+
+  <button type="submit"
+          class="btn btn-team"
+          style="width:100%; margin-top:1rem;">
+    🏟️ Join Auction
+  </button>
+
+</form>
+
+<a href="/" class="back-link">← Back to home</a>
+```
+
   </div>
 </div>
 {% endblock %}
