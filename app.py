@@ -15,10 +15,12 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(__file__))
 
 from flask import Flask, jsonify, request, render_template, Response, redirect, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 import models.auction as auction
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = Config.SECRET_KEY
 
 # ── SSE Event Bus ─────────────────────────────────────────────────────────────
